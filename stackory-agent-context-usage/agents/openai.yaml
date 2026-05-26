@@ -1,0 +1,4 @@
+interface:
+  display_name: "Stackory Agent Context Usage"
+  short_description: "Use Stackory agent context generator."
+  default_prompt: "Help me generate agent context files with Stackory."
