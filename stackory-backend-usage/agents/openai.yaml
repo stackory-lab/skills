@@ -1,0 +1,4 @@
+interface:
+  display_name: "Stackory Backend Usage"
+  short_description: "Use Stackory backend packages in application code."
+  default_prompt: "Help me integrate Stackory backend packages in an application."

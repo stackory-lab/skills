@@ -1,0 +1,5 @@
+interface:
+  display_name: "Stackory Foundation Usage"
+  short_description: "Use Stackory foundation packages."
+  default_prompt: "Help me use Stackory foundation packages in an application."
+

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Stackory Auth Usage"
+  short_description: "Use Stackory auth packages in application code."
+  default_prompt: "Help me integrate Stackory auth packages in an application."

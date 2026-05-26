@@ -1,0 +1,4 @@
+interface:
+  display_name: "Stackory Signals Usage"
+  short_description: "Use Stackory signals and analytics packages."
+  default_prompt: "Help me integrate Stackory signals or analytics packages."
