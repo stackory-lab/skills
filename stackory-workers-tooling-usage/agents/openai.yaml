@@ -1,0 +1,4 @@
+interface:
+  display_name: "Stackory Workers Tooling Usage"
+  short_description: "Use Stackory Cloudflare Workers topology tooling."
+  default_prompt: "Help me configure or operate Stackory Workers tooling."
