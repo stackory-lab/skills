@@ -1,6 +1,7 @@
 ---
 name: stackory-foundation-usage
-description: Use when helping an application developer use Stackory foundation packages: shared storage contracts and adapters, standard errors and error codes, API response shapes, API client helpers, crypto utilities, gzip helpers, and common type exports.
+description: >
+  Use when helping an application developer use Stackory foundation packages: shared storage contracts and adapters, standard errors and error codes, API response shapes, API client helpers, crypto utilities, gzip helpers, and common type exports.
 ---
 
 # Stackory Foundation Usage

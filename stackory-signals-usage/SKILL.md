@@ -1,6 +1,7 @@
 ---
 name: stackory-signals-usage
-description: Use when helping an application developer integrate Stackory signals packages: analytics clients and providers, PostHog web or node adapters, user behavior signal stores, signal persistence, feature flags, experiment assignment, or analytics-from-signal plugins.
+description: >
+  Use when helping an application developer integrate Stackory signals packages: analytics clients and providers, PostHog web or node adapters, user behavior signal stores, signal persistence, feature flags, experiment assignment, or analytics-from-signal plugins.
 ---
 
 # Stackory Signals Usage

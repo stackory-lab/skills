@@ -1,6 +1,7 @@
 ---
 name: stackory-backend-usage
-description: Use when helping an application developer integrate Stackory backend packages in server or edge applications: Hono middleware, internal HMAC auth, typed service-to-service calls, platform service abstractions, Cloudflare Workers KV/R2/Queue adapters, or Sentry Cloudflare monitoring.
+description: >
+  Use when helping an application developer integrate Stackory backend packages in server or edge applications: Hono middleware, internal HMAC auth, typed service-to-service calls, platform service abstractions, Cloudflare Workers KV/R2/Queue adapters, or Sentry Cloudflare monitoring.
 ---
 
 # Stackory Backend Usage

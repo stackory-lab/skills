@@ -1,6 +1,7 @@
 ---
 name: stackory-auth-usage
-description: Use when helping an application developer integrate Stackory auth packages: OAuth 2.0 PKCE login, token storage and refresh, RFC 8628 device flow, Better Auth client actions, Better Auth server plugins, OAuth provider consent, or auth URL configuration.
+description: >
+  Use when helping an application developer integrate Stackory auth packages: OAuth 2.0 PKCE login, token storage and refresh, RFC 8628 device flow, Better Auth client actions, Better Auth server plugins, OAuth provider consent, or auth URL configuration.
 ---
 
 # Stackory Auth Usage

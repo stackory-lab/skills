@@ -1,6 +1,7 @@
 ---
 name: stackory-agent-context-usage
-description: Use when helping an application or repository maintainer integrate @stackory/sync-agent-context to generate or check AI agent context files such as AGENTS.md, CLAUDE.md, GEMINI.md, or other Markdown instruction documents from shared fragments and agent-specific sections.
+description: >
+  Use when helping an application or repository maintainer integrate @stackory/sync-agent-context to generate or check AI agent context files such as AGENTS.md, CLAUDE.md, GEMINI.md, or other Markdown instruction documents from shared fragments and agent-specific sections.
 ---
 
 # Stackory Agent Context Usage

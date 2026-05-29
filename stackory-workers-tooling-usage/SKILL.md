@@ -1,6 +1,7 @@
 ---
 name: stackory-workers-tooling-usage
-description: Use when helping a repository maintainer configure or operate @stackory/workers-tooling for Cloudflare Workers topology validation, topology printing, ordered deploys, Worker secret rotation, or local D1 migrations.
+description: >
+  Use when helping a repository maintainer configure or operate @stackory/workers-tooling for Cloudflare Workers topology validation, topology printing, ordered deploys, Worker secret rotation, or local D1 migrations.
 ---
 
 # Stackory Workers Tooling Usage
