@@ -51,11 +51,15 @@ Do not force every section below into the final answer. Use only what the task n
    - Convert important behavior into tests.
    - Prioritize core rules, state transitions, edge cases, failure paths, and cross-module scenarios.
    - Avoid low-value tests that only mirror implementation details.
+   - Include a `Done` column with checkboxes for every planned test item.
+   - When a test item is fully implemented and validated, the agent must mark its checkbox complete before moving on.
 
 7. **Milestones**
    - Split work into small, verifiable stages.
    - Each milestone should have a goal, deliverables, tests, and done criteria.
    - Prefer milestones that leave the codebase in a valid state.
+   - Include a checkbox for every milestone and any meaningful sub-step.
+   - When a milestone or sub-step is fully completed and validated, the agent must mark its checkbox complete before starting the next milestone.
 
 8. **Code Guide**
    - For medium/large planning artifacts intended for maintainers or new contributors, include a final code guide section.
@@ -66,6 +70,7 @@ Do not force every section below into the final answer. Use only what the task n
 
 9. **Implementation Loop**
    - For each milestone: write or update tests, implement the minimal code, refactor, then validate.
+   - After completing and validating each planned test item, sub-step, or milestone, update its checkbox from `[ ]` to `[x]`.
    - If implementation reveals a wrong assumption, update the plan or call it out before continuing.
 
 ## Compact Planning Template
@@ -97,15 +102,18 @@ Use this for medium and large tasks, trimming sections as needed.
 - Risks:
 
 ## TDD Matrix
-| Behavior | Test Type | Priority |
-|---|---|---|
+| Done | Behavior | Test Type | Priority |
+|---|---|---|---|
+| [ ] |  |  |  |
 
 ## Milestones
-### M1
+### [ ] M1
 - Goal:
 - Deliverables:
 - Tests:
 - Done when:
+- Steps:
+  - [ ] 
 
 ## Code Guide
 - Reading order:
@@ -124,5 +132,6 @@ Use this for medium and large tasks, trimming sections as needed.
 - Architecture should define only necessary boundaries.
 - TDD should lock behavior, not implementation trivia.
 - Milestones must be verifiable, not just task lists.
+- Checkboxes are workflow state; keep them current as items are completed and validated.
 - Code guides are for orientation, not exhaustive file inventories.
 - Keep the smallest useful artifact for the task size.
