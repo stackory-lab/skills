@@ -19,6 +19,10 @@ Before reviewing, always read in this order:
 3. `package.json` — dependencies, scripts, package boundaries
 4. Test files co-located with source
 5. All interfaces and types consumed or exported by the target
+6. For package/public API reviews, grep external consumers before judging exports:
+   - Search imports from the package root and subpaths across the workspace.
+   - Classify each exported symbol as externally used, internally used only, or unused.
+   - Treat unused root exports as API surface debt, not harmless convenience.
 
 ---
 
@@ -35,6 +39,7 @@ Evaluate system-level design decisions.
 - **Observability**: Is there adequate logging, tracing, or metrics instrumentation?
 - **Security posture**: Auth gaps, secret handling, input validation, data exposure risks (reference OWASP Top 10).
 - **Developer experience**: Is the API surface intuitive? Are entry points easy to discover?
+- **Public API boundaries**: Does the package root export only the high-level entry points that external callers should depend on? Prefer domain subpath exports (`@pkg/foo/inbound`, `@pkg/foo/persistence`, `@pkg/foo/services`) over a large flattened root barrel when consumers naturally fall into separate domains. Do not recommend runtime namespace objects (for example `services.foo()`) merely to organize package exports unless they add real behavior; package `exports` subpaths are the better boundary tool for TypeScript packages.
 
 ### Dimension 2 — Semantic Quality
 
@@ -59,11 +64,21 @@ Audit whether code lives where it is owned, not where it was convenient to put i
 **Identify these patterns:**
 - Pure re-export files (entire body is `export { ... } from '...'`)
 - Exports that are never imported anywhere (dead code)
+- Root package barrels that export symbols nobody outside the package imports
+- Public exports that are only used by sibling internals and should move behind a domain subpath or become private
+- Domain-specific exports mixed into a flattened root entry point when external consumers only need one domain
 - A `common/` or `shared/` layer co-mingling truly shared code with module-specific code
 - Identity functions (return input unchanged, no validation) and single-use one-liners
 - Alias re-exports (`export const newName = originalName`) with no additional value
 - Files whose existence cost (import path indirection, reader context-switch) exceeds their content value — a 5-line class or a single factory function in isolation rarely justifies a dedicated file unless it marks a true semantic boundary
 - Circular or overly tight coupling between packages
+
+**Public export hygiene rule:**
+- Start from real external imports, not from the current `index.ts`.
+- Keep the package root small and intentional: application factories, primary clients, or other stable top-level entry points only.
+- Move secondary domains to explicit package subpaths through `package.json` `exports`.
+- Delete or privatize exports with no external consumers unless the package README documents them as intentional public API.
+- When proposing subpaths, align them with ownership domains, not file layout accidents.
 
 ### Dimension 4 — Error Handling
 
