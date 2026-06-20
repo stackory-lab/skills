@@ -52,14 +52,27 @@ Do not force every section below into the final answer. Use only what the task n
    - Prioritize core rules, state transitions, edge cases, failure paths, and cross-module scenarios.
    - Avoid low-value tests that only mirror implementation details.
    - Include a `Done` column with checkboxes for every planned test item.
+   - Include an `Evidence` column. A row may be marked `[x]` only when Evidence names the test (file::case) **and the boundary it actually exercises** — or, if deferred, the milestone that will complete it.
+   - The Evidence MUST match the `Test Type`. Evidence borrowed from a lower/earlier milestone, "the types exist", or a test that does not traverse the named boundary does not satisfy the row — it stays `[ ]`.
    - When a test item is fully implemented and validated, the agent must mark its checkbox complete before moving on.
 
 7. **Milestones**
    - Split work into small, verifiable stages.
    - Each milestone should have a goal, deliverables, tests, and done criteria.
+   - Express **done criteria as the specific gate rows that must be green**, not prose. "Done" = those rows are `[x]` with matching Evidence — not a vibe.
    - Prefer milestones that leave the codebase in a valid state.
    - Include a checkbox for every milestone and any meaningful sub-step.
+   - Give each Medium/Large milestone an **Exit Checklist** (below). A milestone is not done until every exit check passes or is explicitly waived with a reason.
    - When a milestone or sub-step is fully completed and validated, the agent must mark its checkbox complete before starting the next milestone.
+
+   **Milestone Exit Checklist** (Medium/Large only — falsifiable, each backed by an artifact):
+   - [ ] **Evidence:** every gate row for this milestone is `[x]` with Evidence matching its Test Type (no borrowed/lower-milestone evidence).
+   - [ ] **Reachability:** every new/changed runtime path is traced entry→observable effect, OR listed as deferred with the milestone that completes it. No unit marked done on existence alone.
+   - [ ] **Cross-cutting parity:** any alternate/parallel path added (new pipeline, route, handler) preserves the cross-cutting guarantees of the path it shadows — auth, error boundary, trace, dedup, idempotency — or each dropped concern is listed and justified.
+   - [ ] **Blocked values flagged:** anything hardcoded/stubbed because it depends on a later milestone carries a gap comment in code and a note on the affected gate row.
+   - [ ] **Valid state:** build + existing suites green; the codebase is shippable as-is.
+
+   These exit checks are the plan-time mirror of the `implementation-delivery` skill's MUSTs; the `Evidence` column is the shared artifact between planning and build.
 
 8. **Code Guide**
    - For medium/large planning artifacts intended for maintainers or new contributors, include a final code guide section.
@@ -102,18 +115,25 @@ Use this for medium and large tasks, trimming sections as needed.
 - Risks:
 
 ## TDD Matrix
-| Done | Behavior | Test Type | Priority |
-|---|---|---|---|
-| [ ] |  |  |  |
+| Done | Behavior | Test Type | Evidence (test::case + boundary, or deferred→Mx) | Priority |
+|---|---|---|---|---|
+| [ ] |  |  |  |  |
 
 ## Milestones
 ### [ ] M1
 - Goal:
 - Deliverables:
 - Tests:
-- Done when:
+- Done when (gate rows that must be green):
+- Deferred / blocked-on (what this milestone does NOT yet do, + which milestone completes it):
 - Steps:
   - [ ] 
+- Exit checks:
+  - [ ] Evidence matches Test Type for every gate row
+  - [ ] Every new path traced entry→effect or marked deferred
+  - [ ] Alternate paths preserve cross-cutting guarantees (auth / error / trace / dedup / idempotency)
+  - [ ] Blocked/hardcoded values flagged in code + on the gate row
+  - [ ] Build + suites green
 
 ## Code Guide
 - Reading order:
@@ -132,6 +152,7 @@ Use this for medium and large tasks, trimming sections as needed.
 - Architecture should define only necessary boundaries.
 - TDD should lock behavior, not implementation trivia.
 - Milestones must be verifiable, not just task lists.
+- "Done" is falsifiable: a checkbox flips only when its Evidence is named and matches the Test Type — never on existence or borrowed evidence.
 - Checkboxes are workflow state; keep them current as items are completed and validated.
 - Code guides are for orientation, not exhaustive file inventories.
 - Keep the smallest useful artifact for the task size.

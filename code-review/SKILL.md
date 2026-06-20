@@ -1,204 +1,152 @@
 ---
 name: code-review
-description: Perform a comprehensive code review across four dimensions — architecture, semantic quality, module ownership, and error handling — producing a unified scored report with actionable findings.
+description: Review code for actionable architecture, semantic, module ownership, and error-handling defects. Use when Codex needs to review a package, module, directory, file set, or change and produce a concise findings-only repair list that a code implementer can execute and validate directly.
 ---
 
 # Code Review
 
-You are now in **Code Review mode**. Conduct a thorough review across four dimensions: architecture design, semantic code quality, module ownership health, and error handling patterns. This is a read-only analysis — produce a report with findings and recommendations, do not modify any files.
+Perform a read-only code review. Investigate thoroughly, but report only confirmed, actionable problems. Optimize the report for the code implementer who will apply the fixes.
 
 ## Review Scope
 
-If the user specifies a target (package, module, directory, or file set), focus there. Otherwise review the current working directory as a whole.
+Focus on the target specified by the user. Otherwise, review the current working directory.
 
-## What to Read First
+## Investigation
 
-Before reviewing, always read in this order:
-1. `README.md` and `CLAUDE.md` in scope — understand stated conventions before flagging violations
-2. Key entry points (`index.ts`, `main.ts`, etc.) and type definitions
-3. `package.json` — dependencies, scripts, package boundaries
-4. Test files co-located with source
-5. All interfaces and types consumed or exported by the target
-6. For package/public API reviews, grep external consumers before judging exports:
-   - Search imports from the package root and subpaths across the workspace.
-   - Classify each exported symbol as externally used, internally used only, or unused.
-   - Treat unused root exports as API surface debt, not harmless convenience.
+Read the following before judging the code:
 
----
+1. Read the `README.md`, `CLAUDE.md`, and architecture documentation in scope.
+2. Read entry points, public types, `package.json`, and co-located tests.
+3. Trace relevant production call paths and side effects.
+4. Search workspace consumers before judging exports or public APIs.
+5. Derive validation commands from the affected Nx projects and repository instructions.
+
+Use the four dimensions below as an internal checklist. Do not create scores, dimension summaries, or positive-pattern sections from this checklist.
 
 ## Review Dimensions
 
-### Dimension 1 — Architecture
+### Architecture
 
-Evaluate system-level design decisions.
+- Verify separation between transport, business logic, persistence, and lifecycle concerns.
+- Check type safety, testability, scalability, observability, security, and public API boundaries.
+- Flag only problems with a concrete behavioral, maintenance, security, or operability impact.
+- Prefer domain subpath exports over a flattened root barrel when real consumers follow domain boundaries.
+- Do not recommend runtime namespace objects solely to organize TypeScript package exports.
 
-- **Separation of concerns**: Are layers (transport, business logic, persistence, scheduling) clearly separated?
-- **Type safety**: Is `unknown` preferred over `any`? Are interfaces well-defined? Do type unions or enums contain variants that are never produced at runtime (declared intent vs. implemented reality)?
-- **Testability**: Can units be tested in isolation? Are dependencies injectable?
-- **Scalability**: Are there N+1 patterns, unbounded lists, missing caching, or synchronous blocking calls?
-- **Observability**: Is there adequate logging, tracing, or metrics instrumentation?
-- **Security posture**: Auth gaps, secret handling, input validation, data exposure risks (reference OWASP Top 10).
-- **Developer experience**: Is the API surface intuitive? Are entry points easy to discover?
-- **Public API boundaries**: Does the package root export only the high-level entry points that external callers should depend on? Prefer domain subpath exports (`@pkg/foo/inbound`, `@pkg/foo/persistence`, `@pkg/foo/services`) over a large flattened root barrel when consumers naturally fall into separate domains. Do not recommend runtime namespace objects (for example `services.foo()`) merely to organize package exports unless they add real behavior; package `exports` subpaths are the better boundary tool for TypeScript packages.
+### Semantic Quality
 
-### Dimension 2 — Semantic Quality
+- Verify names describe all observable behavior and side effects.
+- Flag methods with multiple reasons to change or wrappers that add no behavior, validation, or semantic narrowing.
+- Check caller predictability, async transparency, mutation style, ordering requirements, and idempotency.
+- Trace callers before concluding that a semantic mismatch is harmful.
 
-Evaluate whether code means what it says at the method and module level.
+### Module Ownership
 
-- **Semantic accuracy**: Does each method name describe ALL its side effects? Flag `get*` / `build*` methods that mutate state, and `initialize()` / `setup()` with observable side effects beyond the object itself. Flag file or module names that imply a pattern or protocol (e.g. "machine", "factory", "registry") without implementing it — names are contracts with the reader.
-- **Single responsibility**: Does each method have exactly one reason to change? Flag AND-descriptions ("persists state AND emits checkpoint"). Flag abstraction layers that wrap a single call without adding behavior, validation, or semantic narrowing — a wrapper that does nothing except add an extra name is noise, not structure.
-- **Caller-perspective predictability**: Can a caller predict all behavior from the call site alone? Flag hidden async work, debounced side effects buried in unrelated methods, and implicit ordering requirements. Flag mixed mutability styles within a single function — creating an immutable copy then mutating it directly destroys the reader's mental model of data flow.
-- **Coupling**: Does each method touch exactly one layer? Flag storage persistence calling checkpoint notification, business logic inside infrastructure code.
-- **Async / side-effect transparency**: Are all async side effects explicitly awaited or registered? Flag fire-and-forget calls, closures capturing unassigned variables, and silently dropped work on early termination.
-- **Idempotency guards**: Are expensive operations protected against redundant execution? Flag O(n) idempotency checks (e.g., `JSON.stringify` comparisons) where O(1) counters suffice.
+- Investigate suspicious barrels, dead exports, misplaced shared code, circular dependencies, and cross-domain imports.
+- Start from real consumers rather than assuming the current `index.ts` defines the correct public API.
+- Treat import counts as evidence, not conclusions. A single-owner or multi-owner symbol is not inherently misplaced.
+- Report only ownership problems that require a concrete move, privatization, deletion, or boundary change.
+- Include relevant consumers directly in the finding instead of producing a separate ownership map.
 
-### Dimension 3 — Module Ownership
+### Error Handling
 
-Audit whether code lives where it is owned, not where it was convenient to put it.
+- Check swallowed errors, floating promises, error classification, boundary handling, actionable context, and cleanup.
+- Verify every failure and fallback path produces the intended observable result.
+- Confirm cancellation and timeout signals reach the real awaited operation.
+- Trace callers and boundary behavior before reporting propagation problems.
 
-**Classify every export / file in the target as one of:**
-- `single-owner` — imported by exactly one module
-- `multi-owner` — imported by two or more distinct modules
-- `dead` — imported by nobody
+## Finding Standard
 
-**Identify these patterns:**
-- Pure re-export files (entire body is `export { ... } from '...'`)
-- Exports that are never imported anywhere (dead code)
-- Root package barrels that export symbols nobody outside the package imports
-- Public exports that are only used by sibling internals and should move behind a domain subpath or become private
-- Domain-specific exports mixed into a flattened root entry point when external consumers only need one domain
-- A `common/` or `shared/` layer co-mingling truly shared code with module-specific code
-- Identity functions (return input unchanged, no validation) and single-use one-liners
-- Alias re-exports (`export const newName = originalName`) with no additional value
-- Files whose existence cost (import path indirection, reader context-switch) exceeds their content value — a 5-line class or a single factory function in isolation rarely justifies a dedicated file unless it marks a true semantic boundary
-- Circular or overly tight coupling between packages
+Report a finding only when all of the following are available:
 
-**Public export hygiene rule:**
-- Start from real external imports, not from the current `index.ts`.
-- Keep the package root small and intentional: application factories, primary clients, or other stable top-level entry points only.
-- Move secondary domains to explicit package subpaths through `package.json` `exports`.
-- Delete or privatize exports with no external consumers unless the package README documents them as intentional public API.
-- When proposing subpaths, align them with ownership domains, not file layout accidents.
+- A confirmed defect or material risk, not a preference or speculative improvement.
+- A precise `file:line` location and supporting call-site evidence when relevant.
+- A single required change that is specific enough to implement without design discovery.
+- Observable acceptance criteria, including required regression coverage.
 
-### Dimension 4 — Error Handling
+Merge locations that share one root cause into one finding. Split findings that require independent fixes or acceptance checks.
 
-Evaluate how errors are surfaced, propagated, and communicated.
+Do not report:
 
-- **Swallowed errors**: Empty `catch` blocks or `catch` that only logs without re-throwing or recovering.
-- **Error classification**: Are user errors (validation, 4xx) distinguished from system errors (infrastructure, 5xx)? Are error types/classes used or is everything a generic `Error`?
-- **Async error propagation**: Are all promise rejections handled? Are there floating promises with no `.catch()`?
-- **Boundary handling**: At system boundaries (HTTP handlers, queue consumers, scheduled jobs), is there a top-level error boundary that prevents silent failures?
-- **Error messages**: Do error messages include enough context (what operation failed, with what input) to be actionable in production?
-- **Cleanup on failure**: Do error paths clean up resources (connections, locks, temp files) or leave them dangling?
+- Positive patterns, scores, or general health assessments.
+- Style-only nits without material impact.
+- Raw ownership inventories or analysis artifacts.
+- Optional refactors presented as defects.
+- Open questions that further repository investigation can answer.
 
----
+If a missing fact makes implementation unsafe, continue investigating. If the fact cannot be derived from the repository, list it under `Blockers` and do not present the uncertain recommendation as a finding.
+
+## Severity
+
+- **Critical**: Exploitable security issue, data loss, or system-wide failure requiring immediate action.
+- **High**: Incorrect production behavior, broken critical path, serious reliability issue, or major boundary violation.
+- **Medium**: Real defect or maintainability problem with bounded impact that should be scheduled.
+
+Omit low-value findings and style-only nits.
 
 ## Report Format
 
-Produce the review as a structured Markdown report. Every section is required. Cite `file:line` for every claim.
+Order findings by severity, then by implementation dependency. Use this exact structure:
 
-```
-# Code Review — <Target Name>
-Date: <today's date>
+```markdown
+# Code Review — <Target>
 
-## 1. Executive Summary
-<3–5 sentences: what this system does, overall health across all four dimensions, and the single most important thing to fix.>
+## Findings
 
-## 2. Scorecard
-
-| Dimension                  | Score | Notes |
-|----------------------------|-------|-------|
-| Separation of Concerns     | /5    | |
-| Type Safety                | /5    | |
-| Testability                | /5    | |
-| Scalability                | /5    | |
-| Observability              | /5    | |
-| Security Posture           | /5    | |
-| Developer Experience       | /5    | |
-| Semantic Accuracy          | /5    | |
-| Single Responsibility      | /5    | |
-| Caller Predictability      | /5    | |
-| Module Ownership Clarity   | /5    | |
-| Error Handling             | /5    | |
-| **Overall**                | **/60** | |
-
-## 3. Findings
-
-Each finding uses this template:
-
-### F1 — <Short title>
-**Dimension**: Architecture | Semantic | Module Ownership | Error Handling
-**Severity**: Critical | High | Medium | Low
+### F1 — <Problem title>
+**Severity**: Critical | High | Medium
 **Location**: `file:line`
-**Problem**: What the code says vs. what it actually does, or why it is a risk.
-**Recommendation**: Concrete fix, rename, decomposition, or migration path.
 
-(repeat for each finding, ordered by severity)
+**Problem**
+Describe the current behavior, trigger, impact, and relevant call-site evidence.
 
-## 4. Module Ownership Map
+**Required Change**
+State the required implementation and affected boundary. Do not give a menu of vague options.
 
-| Export / File | Consumers | Classification |
-|---|---|---|
-| `SymbolName` | `module-a` only | single-owner |
-| `SharedUtil` | `module-a`, `module-b` | multi-owner |
-| `UnusedType` | none | dead |
+**Acceptance Criteria**
+- State observable behavior that must hold after the fix.
+- Name the regression test or scenario that must be added or updated.
+- State the important behavior that must not regress.
 
-Only include entries where the classification reveals a problem or a notable pattern.
+## Blockers
 
-## 5. Decomposition Candidates
-List methods or modules that should be split:
-- `oldMethod()` → `newMethodA()` + `newMethodB()`
+- Include only facts that cannot be derived from the repository and prevent a safe fix.
+- Omit this section when there are no blockers.
 
-Omit this section if none found.
+## Validation
 
-## 6. Positive Patterns
-Bullet list of genuine design wins, citing file:line. Be specific — not "good types" but "IFoo interface at foo.ts:12 makes the contract explicit and prevents null misuse."
-
-## 7. Recommended Action Plan
-
-| Priority | Finding | Action | Effort |
-|----------|---------|--------|--------|
-| 1 | F1 | | Quick Win / Medium / Large |
-
-Group by effort tier, order by impact within each tier.
-
-## 8. Open Questions
-Assumptions made during review, or clarifications needed before implementing recommendations.
+- `<targeted commands for the affected findings>`
+- `pnpm nx run <project>:check:lint`
+- `pnpm nx run <project>:check:type`
+- `pnpm nx run <project>:check:dep`
+- `pnpm nx run <project>:check:test`
+- `pnpm nx run <project>:build`
 ```
 
----
+Use one `Validation` section for the whole report. Do not repeat commands under individual findings.
 
-## Scoring Guide
+Choose validation commands based on scope:
 
-| Score | Meaning |
-|-------|---------|
-| 5 | Exemplary — sets a high bar |
-| 4 | Good — minor gaps |
-| 3 | Adequate — notable issues present |
-| 2 | Weak — significant problems |
-| 1 | Poor — needs immediate attention |
-| 0 | Absent / broken |
+- One project: list the project's `check:lint`, `check:type`, `check:dep`, `check:test`, and `build` targets.
+- Multiple known projects: use `pnpm nx run-many -t check:lint,check:type,check:dep,check:test,build -p <project-a> <project-b>`.
+- Uncertain or broad affected scope: use `pnpm run check:affected`.
+- Package metadata changes: also use `pnpm run monosync`.
+- Add the narrowest targeted regression-test command when the repository exposes one.
 
----
+If no actionable findings exist, output only:
+
+```markdown
+# Code Review — <Target>
+
+No actionable findings.
+```
 
 ## Behavioral Rules
 
-- **Be honest and direct.** Do not soften scores. A 2 means real problems exist.
-- **Cite evidence.** Every finding (positive or negative) must reference a specific `file:line`.
-- **Name the lie.** For semantic issues, quote the method name then state what it actually does that the name doesn't say.
-- **Cite call sites.** For semantic and error handling findings, grep for callers — misuse at call sites often reveals the deeper problem.
-- **Distinguish accidental from intentional coupling.** Ask whether coupling exists because it must, or because it was convenient.
-- **No invented APIs.** Only reference code that actually exists in the repo.
-- **Distinguish facts from inferences.** Use "appears to" or "likely" when you cannot confirm by reading code.
-- **Respect project conventions.** Check `CLAUDE.md` and README for stated patterns before flagging something as a violation.
-- **Language mirroring.** Respond in whatever language the user writes in.
-
----
-
-## After the Report
-
-Offer to:
-1. Dive deeper into any specific finding
-2. Draft a decomposition plan for high-severity semantic issues
-3. Generate missing tests for identified untested critical paths
-4. Produce a module ownership migration plan (audit → dead code removal → directory restructuring) for Dimension 3 findings
+- Cite `file:line` for every claim and cite relevant call sites for semantic and error-handling findings.
+- State facts directly and label unavoidable inference explicitly.
+- Describe what the code does, not just which guideline it violates.
+- Make `Required Change` imperative and implementation-ready.
+- Keep acceptance criteria observable and verifiable.
+- Do not invent APIs, consumers, commands, or repository conventions.
+- Mirror the user's language.
